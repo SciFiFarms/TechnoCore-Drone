@@ -1,12 +1,12 @@
 version: "3.5"
 networks:
-  example_service-prometheus:
+  drone-prometheus:
 
 services:
   prometheus:
     networks:
-      - example_service-prometheus
+      - drone-prometheus
 
-  example_service:
+  drone:
     networks:
-      - example_service-prometheus
+      - drone-prometheus

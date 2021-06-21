@@ -1,12 +1,12 @@
 version: "3.5"
 networks:
-  example_service-pgadmin:
+  drone-pgadmin:
 
 services:
   pgadmin:
     networks:
-      - example_service-pgadmin
+      - drone-pgadmin
 
-  example_service:
+  drone:
     networks:
-      - example_service-pgadmin
+      - drone-pgadmin

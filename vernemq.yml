@@ -1,21 +1,21 @@
 version: "3.5"
 secrets:
-  mqtt_example_service_password:
-    name: ${STACK_NAME:-technocore}_mqtt_example_service_password
+  mqtt_drone_password:
+    name: ${STACK_NAME:-technocore}_mqtt_drone_password
     external: true
-  example_service_mqtt_password:
-    name: ${STACK_NAME:-technocore}_example_service_mqtt_password
+  drone_mqtt_password:
+    name: ${STACK_NAME:-technocore}_drone_mqtt_password
     external: true
 
 services:
   mqtt:
     networks:
-      - example_service
+      - drone
     secrets:
-      - source: mqtt_example_service_password
-        target: users/example_service
+      - source: mqtt_drone_password
+        target: users/drone
 
-  example_service:
+  drone:
     secrets:
-      - source: example_service_mqtt_password
+      - source: drone_mqtt_password
         target: mqtt_password
