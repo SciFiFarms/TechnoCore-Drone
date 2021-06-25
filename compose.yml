@@ -9,14 +9,17 @@ volumes:
   drone-db:
 
 secrets:
-  drone_admin_password:
-    name: ${STACK_NAME:-technocore}_drone_admin_password
+  drone_github_client_id:
+    name: ${STACK_NAME:-technocore}_drone_github_client_id
     external: true
-  drone_drone_db_password:
-    name: ${STACK_NAME:-technocore}_drone_drone_db_password
+  drone_github_client_secret:
+    name: ${STACK_NAME:-technocore}_drone_github_client_secret
     external: true
-  drone_db_drone_password:
-    name: ${STACK_NAME:-technocore}_drone_db_drone_password
+  drone_agent_drone_password:
+    name: ${STACK_NAME:-technocore}_drone_agent_drone_password
+    external: true
+  drone_drone_agent_password:
+    name: ${STACK_NAME:-technocore}_drone_drone_agent_password
     external: true
 
 services:
@@ -31,7 +34,7 @@ services:
         - traefik.frontend.rule=$DRONE_ROUTING_LABEL
         - traefik.frontend.priority=$DRONE_ROUTING_LABEL_PRIORITY
         # You'll need to set application's port here.
-        - traefik.port=SET_ME_PLEASE
+        - traefik.port=80
         - ${TRAEFIK_BASIC_AUTH}
         - traefik.enable=true
         - traefik.tags=ingress
@@ -42,8 +45,8 @@ services:
         # Traefik service that listens to HTTPS
         - traefik.webservice.frontend.entryPoints=https
         - com.ouroboros.enable=true
-        #- user-provided-secret-dns_token=drone dns_token
-        #- user-provided-secret-dns_user=drone dns_user
+        - user-provided-secret-github_client_id=drone github_client_id
+        - user-provided-secret-github_client_secret=drone github_client_secret
       mode: global
       restart_policy:
         condition: any
@@ -61,6 +64,17 @@ services:
       #- MQTT_USER=${drone}
       - ADMIN_USER=${ADMIN_USER}
       - ADMIN_PASSWORD={{"{{DOCKER-SECRET:admin_password}}"}}
+      - DRONE_GITHUB_SERVER=https://github.com
+      - DRONE_GITHUB_CLIENT_ID={{"{{DOCKER-SECRET:github_client_id}}"}}
+      - DRONE_GITHUB_CLIENT_SECRET={{"{{DOCKER-SECRET:github_client_secret}}"}}
+      - DRONE_AGENTS_ENABLED=true
+      - DRONE_RPC_SECRET={{"{{DOCKER-SECRET:drone_agent_password}}"}}
+      - DRONE_SERVER_HOST=https://drone.${DOMAIN}
+      - DRONE_SERVER_PROTO=https
+      - DRONE_TLS_AUTOCERT=true
+      - DRONE_LOGS_TRACE=true
+      - DRONE_LOGS_PRETTY=true
+      - DRONE_LOGS_COLOR=true
     image: ${image_provider:-scififarms}/technocore-drone:${TAG:-latest}
     logging:
       driver: "${LOGGING_DRIVER}"
@@ -70,11 +84,65 @@ services:
       - drone
       - drone-private
     secrets:
-      - source: drone_admin_password
-        target: admin_password
-      - source: drone_drone_db_password
-        target: drone_db_password
+      - source: drone_github_client_id
+        target: github_client_id
+      - source: drone_github_client_secret
+        target: github_client_secret
+      - source: drone_drone_agent_password
+        target: drone_agent_password
     volumes:
-      # Likely need to change this
-      - drone:/var/lib/drone
+      - ${TECHNOCORE_DATA}/drone:/data
       - ${DEV_MOUNT_DRONE_MIGRATIONS:-$EMPTY_MOUNT}
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  drone_agent:
+    deploy:
+      labels:
+        #- traefik.frontend.rule=$DRONE_ROUTING_LABEL
+        #- traefik.frontend.priority=$DRONE_ROUTING_LABEL_PRIORITY
+        ## You'll need to set application's port here.
+        #- traefik.port=80
+        #- ${TRAEFIK_BASIC_AUTH}
+        #- traefik.enable=true
+        #- traefik.tags=ingress
+        #- traefik.docker.network=${STACK_NAME:-technocore}_drone
+        ## Traefik service that listens to HTTP
+        #- traefik.redirectorservice.frontend.entryPoints=http
+        #- traefik.redirectorservice.frontend.redirect.entryPoint=https
+        ## Traefik service that listens to HTTPS
+        #- traefik.webservice.frontend.entryPoints=https
+        - com.ouroboros.enable=true
+        #- user-provided-secret-dns_token=drone dns_token
+        #- user-provided-secret-dns_user=drone dns_user
+      mode: global
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.role == manager
+      # Big services will need this modified or removed.
+      #resources:
+      #  limits:
+      #    memory: 128M
+      #  reservations:
+      #    memory: 64M
+    environment:
+      - DRONE_RPC_HOST=drone
+      - DRONE_RUNNER_CAPACITY=1
+      - DRONE_RUNNER_NAME=Technocore-Drone-Agent
+      - DRONE_LOGS_TRACE=true
+      - DRONE_LOGS_PRETTY=true
+      - DRONE_LOGS_COLOR=true
+    image: drone/drone-runner-docker:1.6.3
+    logging:
+      driver: "${LOGGING_DRIVER}"
+      options:
+        tag: "{{.Name}}"
+    networks:
+      - drone
+      - drone-private
+    secrets:
+      - source: drone_agent_drone_password
+        target: drone_password
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
