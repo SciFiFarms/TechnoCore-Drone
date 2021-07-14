@@ -4,7 +4,7 @@ FROM drone/drone:2.0.1
 #FROM alpine:3.10
 #COPY --from=base / /
 
-#RUN apk add --no-cache bash
+RUN apk add --no-cache bash
 
 ## Add dogfish
 ## This should be set to where the volume mounts to.
@@ -23,4 +23,4 @@ COPY entrypoint.sh /usr/bin/entrypoint.sh
 COPY exitpoint.sh /usr/bin/exitpoint.sh
 
 ENTRYPOINT ["go-init"]
-CMD ["-main", "/usr/bin/entrypoint.sh /bin/drone-server"", "-post", "/usr/bin/exitpoint.sh"]
+CMD ["-main", "/usr/bin/entrypoint.sh /bin/drone-server", "-post", "/usr/bin/exitpoint.sh"]
