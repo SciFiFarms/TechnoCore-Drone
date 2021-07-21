@@ -10,6 +10,7 @@
       {
          "image": "plugins/docker",
          "name": "publish",
+         "pull": "if-not-exists",
          "settings": {
             "auto_tag": false,
             "auto_tag_suffix": "linux-amd64",
@@ -20,6 +21,9 @@
             },
             "purge": false,
             "repo": "scififarms/technocore-drone",
+            "tags": [
+               "local"
+            ],
             "username": {
                "from_secret": "docker_username"
             }
@@ -36,6 +40,11 @@
          ]
       }
    ],
+   "trigger": {
+      "repo": [
+         "afake/repo"
+      ]
+   },
    "volumes": [
       {
          "host": {
@@ -63,6 +72,7 @@
       {
          "image": "plugins/docker",
          "name": "test",
+         "pull": "if-not-exists",
          "settings": {
             "auto_tag": false,
             "auto_tag_suffix": "linux-amd64",
@@ -112,8 +122,9 @@
       {
          "image": "plugins/docker",
          "name": "publish",
+         "pull": "if-not-exists",
          "settings": {
-            "auto_tag": true,
+            "auto_tag": false,
             "auto_tag_suffix": "linux-amd64",
             "dockerfile": "docker/Dockerfile.amd64",
             "dry_run": false,
@@ -122,6 +133,11 @@
             },
             "purge": false,
             "repo": "scififarms/technocore-drone",
+            "tags": [
+               "latest",
+               "v1.0",
+               "v1.0.${DRONE_BUILD_NUMBER}"
+            ],
             "username": {
                "from_secret": "docker_username"
             },
